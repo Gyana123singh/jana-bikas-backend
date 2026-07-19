@@ -37,14 +37,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Jana Bikas API is running' });
 });
 
-// Serve admin panel
-app.use('/admin', (req, res, next) => {
-  if (req.method === 'GET' && !path.extname(req.path)) {
-    return res.sendFile(path.join(__dirname, 'admin', 'index.html'));
-  }
-  next();
-});
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
+
 
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Send, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { Phone, Mail, MapPin, Send, MessageSquare, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { contactApi } from '../api';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,8 @@ const Contact = () => {
 
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -36,18 +39,33 @@ const Contact = () => {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError('');
     if (validate()) {
-      setSubmitted(true);
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
-      });
-      setTimeout(() => setSubmitted(false), 5000);
+      setLoading(true);
+      try {
+        await contactApi.submitContact({
+          fullName: formData.name, // Model expects fullName
+          email: formData.email,
+          mobile: formData.phone, // Model expects mobile
+          subject: formData.subject,
+          message: formData.message
+        });
+        setSubmitted(true);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+        setTimeout(() => setSubmitted(false), 8000);
+      } catch (err) {
+        setSubmitError(err.response?.data?.message || err.message || 'Failed to send message. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -211,12 +229,29 @@ const Contact = () => {
                 </div>
               </div>
 
+              {submitError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold flex items-center gap-1.5">
+                  <AlertCircle size={14} />
+                  <span>{submitError}</span>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl font-display font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-md transition-all text-sm mt-2"
+                disabled={loading}
+                className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl font-display font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-md transition-all text-sm mt-2 disabled:opacity-50"
               >
-                <Send className="w-4 h-4" />
-                <span>Send Message</span>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Sending Message...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Send Message</span>
+                  </>
+                )}
               </button>
             </form>
           )}

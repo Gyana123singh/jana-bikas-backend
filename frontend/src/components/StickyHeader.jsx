@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Heart, Search, ChevronDown } from 'lucide-react';
-import { causes } from '../data/ngoData';
+import { useCauses } from '../context/CausesContext';
 import logo from '../assests/image/logo.png';
 
 const StickyHeader = () => {
@@ -10,8 +10,11 @@ const StickyHeader = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const { causes } = useCauses();
   const [causesDropdown, setCausesDropdown] = useState(false);
   const location = useLocation();
+  const isHomePage = location.pathname === '/';
+  const shouldShowSolid = isScrolled || !isHomePage || isOpen;
 
   // Scroll Listener to trigger styling change
   useEffect(() => {
@@ -65,7 +68,7 @@ const StickyHeader = () => {
   return (
     <header 
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-        isScrolled 
+        shouldShowSolid 
           ? 'glass bg-white/90 shadow-md ' 
           : 'bg-transparent py-5'
       }`}
@@ -93,7 +96,7 @@ const StickyHeader = () => {
                 <button 
                   onClick={() => setCausesDropdown(!causesDropdown)}
                   className={`flex items-center space-x-1 px-2 py-1.5 rounded-lg text-xs xl:text-sm font-semibold transition-colors whitespace-nowrap ${
-                    isScrolled ? 'text-slate-700 hover:text-primary-600' : 'text-slate-100 hover:text-accent-300'
+                    shouldShowSolid ? 'text-slate-700 hover:text-primary-600' : 'text-slate-100 hover:text-accent-300'
                   }`}
                 >
                   <span>{link.name}</span>
@@ -104,8 +107,8 @@ const StickyHeader = () => {
                   to={link.path}
                   className={`px-2 py-1.5 rounded-lg text-xs xl:text-sm font-semibold transition-all whitespace-nowrap ${
                     location.pathname === link.path 
-                      ? (isScrolled ? 'text-primary-600 bg-primary-50' : 'text-accent-400 bg-white/10')
-                      : (isScrolled ? 'text-slate-700 hover:text-primary-600' : 'text-slate-100 hover:text-accent-300')
+                      ? (shouldShowSolid ? 'text-primary-600 bg-primary-50' : 'text-accent-400 bg-white/10')
+                      : (shouldShowSolid ? 'text-slate-700 hover:text-primary-600' : 'text-slate-100 hover:text-accent-300')
                   }`}
                 >
                   {link.name}
@@ -120,7 +123,7 @@ const StickyHeader = () => {
                   </div>
                   {causes.map((cause) => (
                     <Link
-                      key={cause.id}
+                      key={cause._id || cause.id}
                       to={`/causes/${cause.slug}`}
                       className="block px-4 py-2 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-700 font-medium transition-colors"
                       onClick={() => setCausesDropdown(false)}
@@ -150,7 +153,7 @@ const StickyHeader = () => {
             <button 
               onClick={() => setSearchOpen(!searchOpen)} 
               className={`p-2 rounded-full transition-colors ${
-                isScrolled ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-200 hover:bg-white/10'
+                shouldShowSolid ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-200 hover:bg-white/10'
               }`}
               aria-label="Search causes"
             >
@@ -177,7 +180,7 @@ const StickyHeader = () => {
                     {searchResults.length > 0 ? (
                       searchResults.map((result) => (
                         <Link
-                          key={result.id}
+                          key={result._id || result.id}
                           to={`/causes/${result.slug}`}
                           className="block p-2 hover:bg-slate-50 rounded-lg text-left transition-colors"
                         >
@@ -204,7 +207,7 @@ const StickyHeader = () => {
               setIsOpen(false);
             }}
             className={`p-2 rounded-full transition-colors ${
-              isScrolled ? 'text-slate-600' : 'text-slate-200'
+              shouldShowSolid ? 'text-slate-600' : 'text-slate-200'
             }`}
           >
             <Search className="w-5 h-5" />
@@ -217,7 +220,7 @@ const StickyHeader = () => {
               setSearchOpen(false);
             }}
             className={`p-2 rounded-full transition-colors ${
-              isScrolled ? 'text-slate-800' : 'text-white'
+              shouldShowSolid ? 'text-slate-800' : 'text-white'
             }`}
             aria-label="Toggle menu"
           >
@@ -245,7 +248,7 @@ const StickyHeader = () => {
               {searchResults.length > 0 ? (
                 searchResults.map((result) => (
                   <Link
-                    key={result.id}
+                    key={result._id || result.id}
                     to={`/causes/${result.slug}`}
                     className="block py-2 text-left"
                   >
@@ -261,60 +264,54 @@ const StickyHeader = () => {
         </div>
       )}
 
-      {/* Mobile Slide-out Drawer */}
+      {/* Mobile Dropdown Menu */}
       {isOpen && (
-        <div className="xl:hidden fixed inset-0 top-[60px] bg-slate-900/50 backdrop-blur-sm z-40 transition-all duration-300">
-          <div className="bg-white w-3/4 max-w-sm h-full shadow-2xl p-6 overflow-y-auto animate-fade-in flex flex-col justify-between">
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Navigation Menu</span>
-                <div className="h-0.5 w-8 bg-primary-500"></div>
-              </div>
-              <nav className="flex flex-col space-y-4">
-                {navLinks.map((link) => (
-                  <div key={link.name}>
-                    {link.hasDropdown ? (
-                      <div>
-                        <button 
-                          onClick={() => setCausesDropdown(!causesDropdown)}
-                          className="flex items-center justify-between w-full text-left py-2 font-semibold text-slate-800 hover:text-primary-600 transition-colors"
-                        >
-                          <span>{link.name}</span>
-                          <ChevronDown className={`w-4 h-4 transform transition-transform ${causesDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-                        {causesDropdown && (
-                          <div className="pl-4 mt-2 space-y-2 border-l border-slate-100">
-                            {causes.map((cause) => (
-                              <Link
-                                key={cause.id}
-                                to={`/causes/${cause.slug}`}
-                                className="block py-1 text-sm text-slate-600 hover:text-primary-600 transition-colors"
-                              >
-                                {cause.title}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <Link 
-                        to={link.path}
-                        className={`block py-2 font-semibold transition-colors ${
-                          location.pathname === link.path 
-                            ? 'text-primary-600 border-l-2 border-primary-500 pl-2' 
-                            : 'text-slate-800 hover:text-primary-600'
-                        }`}
+        <div className="xl:hidden absolute top-full left-0 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xl animate-slide-down z-40 overflow-y-auto max-h-[85vh]">
+          <div className="px-6 py-6 space-y-6">
+            <nav className="flex flex-col space-y-3">
+              {navLinks.map((link) => (
+                <div key={link.name}>
+                  {link.hasDropdown ? (
+                    <div>
+                      <button 
+                        onClick={() => setCausesDropdown(!causesDropdown)}
+                        className="flex items-center justify-between w-full text-left py-2 text-sm font-semibold text-slate-800 hover:text-primary-600 transition-colors"
                       >
-                        {link.name}
-                      </Link>
-                    )}
-                  </div>
-                ))}
-              </nav>
-            </div>
+                        <span>{link.name}</span>
+                        <ChevronDown className={`w-4 h-4 transform transition-transform ${causesDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      {causesDropdown && (
+                        <div className="pl-4 mt-2 space-y-2 border-l border-slate-100">
+                          {causes.map((cause) => (
+                            <Link
+                              key={cause._id || cause.id}
+                              to={`/causes/${cause.slug}`}
+                              className="block py-1 text-sm text-slate-600 hover:text-primary-600 transition-colors"
+                            >
+                              {cause.title}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Link 
+                      to={link.path}
+                      className={`block py-2 text-sm font-semibold transition-colors ${
+                        location.pathname === link.path 
+                          ? 'text-primary-600 border-l-2 border-primary-500 pl-2' 
+                          : 'text-slate-800 hover:text-primary-600'
+                      }`}
+                    >
+                      {link.name}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </nav>
             
             {/* Mobile Bottom CTA */}
-            <div className="pt-6 border-t border-slate-100">
+            <div className="pt-4 border-t border-slate-100">
               <Link 
                 to="/donate"
                 className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl font-display font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 shadow-md shadow-primary-900/10 hover:shadow-lg transition-all"

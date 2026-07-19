@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { causes } from '../data/ngoData';
 import CauseCard from '../components/CauseCard';
+import { useCauses } from '../context/CausesContext';
 
 const Causes = () => {
+  const { causes, loading } = useCauses();
+
   return (
     <div className="space-y-16 pb-16">
       
@@ -14,18 +16,22 @@ const Causes = () => {
           <span className="text-xs uppercase font-extrabold tracking-widest text-accent-400">Our Core Pillars</span>
           <h1 className="text-4xl md:text-5xl font-display font-extrabold text-white">Our Respected Causes</h1>
           <p className="text-slate-300 max-w-2xl mx-auto text-sm md:text-base font-light">
-            We focus on 7 critical areas of activity, helping communities achieve sustainable livelihoods and self-reliance.
+            We focus on critical areas of activity, helping communities achieve sustainable livelihoods and self-reliance.
           </p>
         </div>
       </section>
 
       {/* Grid listing */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {causes.map((cause) => (
-            <CauseCard key={cause.id} cause={cause} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12 text-slate-500 font-semibold">Loading causes...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {causes.map((cause) => (
+              <CauseCard key={cause._id || cause.id} cause={cause} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Volunteer CTA */}

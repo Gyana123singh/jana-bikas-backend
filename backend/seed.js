@@ -9,6 +9,10 @@ const Cause = require('./models/Cause');
 const SuccessStory = require('./models/SuccessStory');
 const Trustee = require('./models/Trustee');
 const Gallery = require('./models/Gallery');
+const SiteContent = require('./models/SiteContent');
+const SocialPlatform = require('./models/SocialPlatform');
+const SocialPost = require('./models/SocialPost');
+const Donation = require('./models/Donation');
 
 const seedData = async () => {
   try {
@@ -273,6 +277,319 @@ const seedData = async () => {
         { type: 'video', title: 'Student Success Testimonial (Jyoti)', thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80', embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', date: '2026-06-30', order: 7 },
       ]);
       console.log('Gallery seeded');
+    }
+
+    // Seed SiteContent
+    const siteContentExists = await SiteContent.findOne({ key: 'default' });
+    if (!siteContentExists) {
+      await SiteContent.create({
+        key: 'default',
+        content: {
+          siteName: 'Jana Bikas NGO',
+          heroTitle: 'Create lasting impact through every act of kindness',
+          heroSubtitle: 'Modern, transparent, and compassionate support for communities that need it most.',
+          heroCtaText: 'Support the mission',
+          aboutTitle: 'A premium experience for purpose-driven giving',
+          aboutSubtitle: 'Your donations power education, healthcare, skill development, and environmental care with measurable impact.',
+          paymentHeading: 'Secure and elegant giving experience',
+          paymentText: 'Every donation is protected by modern payment rails, 80G-ready documentation, and complete transparency.',
+          trustBadges: ['Transparent reporting', 'Fast digital receipts', 'Trusted by donors'],
+          donationPresets: [500, 1000, 2000, 5000, 10000, 15000, 20000, 30000],
+          essentialsKits: [
+            { id: 'edu', name: 'Education Kit', price: 500, description: 'Books and stationery for a child.' },
+            { id: 'food', name: 'Food Support Pack', price: 1000, description: 'Dry grocery provisions for a family.' },
+            { id: 'med', name: 'Medical Health Kit', price: 2500, description: 'Diagnostic checks and basic medicines.' }
+          ]
+        }
+      });
+      console.log('Default site content seeded');
+    }
+
+    // Seed Social Platforms
+    const platformCount = await SocialPlatform.countDocuments();
+    if (platformCount === 0) {
+      await SocialPlatform.insertMany([
+        {
+          name: "YouTube",
+          handle: "@janabikasngo",
+          followers: "15.4K Subscribers",
+          description: "Watch our ground campaign documentaries, beneficiary testimonial videos, and educational center vlogs.",
+          color: "bg-red-50 hover:bg-red-100 border-red-200 text-red-600",
+          btnColor: "bg-red-600 hover:bg-red-500",
+          link: "https://youtube.com",
+          clicks: 120,
+          order: 1
+        },
+        {
+          name: "Facebook",
+          handle: "/janabikasngo",
+          followers: "42.8K Followers",
+          description: "Get daily field activity updates, volunteer announcement posts, donation drives notifications, and audit statements.",
+          color: "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-600",
+          btnColor: "bg-blue-600 hover:bg-blue-500",
+          link: "https://facebook.com",
+          clicks: 250,
+          order: 2
+        },
+        {
+          name: "Instagram",
+          handle: "@janabikas_ngo",
+          followers: "28.1K Followers",
+          description: "Browse high-definition photos of tree plantations, classroom distributions, healthcare clinic snaps, and reels.",
+          color: "bg-pink-50 hover:bg-pink-100 border-pink-200 text-pink-600",
+          btnColor: "bg-pink-600 hover:bg-pink-500",
+          link: "https://instagram.com",
+          clicks: 340,
+          order: 3
+        },
+        {
+          name: "X / Twitter",
+          handle: "@JanaBikasNGO",
+          followers: "10.2K Followers",
+          description: "Read quick updates on government policy compliance reviews, trust panel discussions, and collaborative announcements.",
+          color: "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-900",
+          btnColor: "bg-slate-900 hover:bg-slate-800",
+          link: "https://twitter.com",
+          clicks: 85,
+          order: 4
+        }
+      ]);
+      console.log('Social platforms seeded');
+    }
+
+    // Seed Social Posts
+    const postCount = await SocialPost.countDocuments();
+    if (postCount === 0) {
+      await SocialPost.insertMany([
+        {
+          platform: "Instagram",
+          author: "janabikas_ngo",
+          time: "2 hours ago",
+          text: "Our monthly healthcare camp at Rampur served over 250 patients today. Gratitude to our medical volunteers! 🩺💚 #health #ngo",
+          image: "https://images.unsplash.com/photo-1579684389782-64d84b5e902a?auto=format&fit=crop&w=600&q=80",
+          likes: 1240,
+          comments: [
+            { user: "Rajesh Kumar", text: "Great work team! Truly inspiring." },
+            { user: "Dr. Ananya", text: "Proud to support this health camp." }
+          ],
+          shares: 12
+        },
+        {
+          platform: "YouTube",
+          author: "Jana Bikas NGO",
+          time: "1 day ago",
+          text: "NEW VIDEO: Sponsoring computer learning tabs in rural schools. Watch how digital tools are changing classroom lessons. Link in bio!",
+          image: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&w=600&q=80",
+          likes: 3890,
+          comments: [
+            { user: "Sunil Verma", text: "Digital education is the future of our rural children." }
+          ],
+          shares: 54
+        },
+        {
+          platform: "Facebook",
+          author: "Jana Bikas NGO",
+          time: "3 days ago",
+          text: "Thanks to Raj Kumar Singhal ji for supporting our skill training lab! The sewing machines have reached our new batch. 🧵✨",
+          image: "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=600&q=80",
+          likes: 850,
+          comments: [],
+          shares: 8
+        }
+      ]);
+      console.log('Social posts seeded');
+    }
+
+    // Seed Donations (sample completed donations for the Respected Donors page)
+    const donationCount = await Donation.countDocuments();
+    if (donationCount === 0) {
+      await Donation.insertMany([
+        {
+          donationId: 'DON-10001',
+          cause: 'education',
+          donationType: 'one-time',
+          generalAmount: 25000,
+          kits: [],
+          kitsAmount: 0,
+          totalAmount: 25000,
+          donor: {
+            fullName: 'Rajesh Kumar Singhal',
+            email: 'rajesh.singhal@email.com',
+            mobile: '9876543210',
+            pan: 'ABCPS1234R',
+            dob: '1978-05-12',
+            address: 'Sector 15, Noida, UP',
+            displayPublicly: true
+          },
+          paymentMode: 'UPI',
+          transactionId: 'TXN-900000001',
+          stripePaymentIntentId: 'mock_seed_1',
+          status: 'completed',
+          createdAt: new Date('2026-07-18T10:30:00Z')
+        },
+        {
+          donationId: 'DON-10002',
+          cause: 'health-care',
+          donationType: 'monthly',
+          generalAmount: 10000,
+          kits: [{ id: 'med', name: 'Medical Health Kit', price: 2500, qty: 2 }],
+          kitsAmount: 5000,
+          totalAmount: 15000,
+          donor: {
+            fullName: 'Dr. Ananya Sharma',
+            email: 'ananya.sharma@hospital.org',
+            mobile: '9012345678',
+            pan: 'BNAPS5678K',
+            dob: '1985-11-03',
+            address: 'Civil Lines, Lucknow, UP',
+            displayPublicly: true
+          },
+          paymentMode: 'CARD',
+          transactionId: 'TXN-900000002',
+          stripePaymentIntentId: 'mock_seed_2',
+          status: 'completed',
+          createdAt: new Date('2026-07-15T14:20:00Z')
+        },
+        {
+          donationId: 'DON-10003',
+          cause: 'environment',
+          donationType: 'one-time',
+          generalAmount: 50000,
+          kits: [],
+          kitsAmount: 0,
+          totalAmount: 50000,
+          donor: {
+            fullName: 'Sunil Verma',
+            email: 'sunil.verma@private.com',
+            mobile: '8899776655',
+            pan: 'CCCPV9999L',
+            dob: '1970-01-22',
+            address: 'MG Road, Jaipur, Rajasthan',
+            displayPublicly: false
+          },
+          paymentMode: 'NETBANKING',
+          transactionId: 'TXN-900000003',
+          stripePaymentIntentId: 'mock_seed_3',
+          status: 'completed',
+          createdAt: new Date('2026-07-10T09:00:00Z')
+        },
+        {
+          donationId: 'DON-10004',
+          cause: 'general',
+          donationType: 'one-time',
+          generalAmount: 5000,
+          kits: [{ id: 'edu', name: 'Education Kit', price: 500, qty: 4 }],
+          kitsAmount: 2000,
+          totalAmount: 7000,
+          donor: {
+            fullName: 'Priya Mehra',
+            email: 'priya.mehra@gmail.com',
+            mobile: '7788996655',
+            pan: '',
+            dob: '1992-08-30',
+            address: 'Varanasi, UP',
+            displayPublicly: true
+          },
+          paymentMode: 'UPI',
+          transactionId: 'TXN-900000004',
+          stripePaymentIntentId: 'mock_seed_4',
+          status: 'completed',
+          createdAt: new Date('2026-07-05T16:45:00Z')
+        },
+        {
+          donationId: 'DON-10005',
+          cause: 'empowerment',
+          donationType: 'one-time',
+          generalAmount: 100000,
+          kits: [],
+          kitsAmount: 0,
+          totalAmount: 100000,
+          donor: {
+            fullName: 'Vikram Singh Chauhan',
+            email: 'vikram@industry.co.in',
+            mobile: '9988776655',
+            pan: 'DDDPC1111M',
+            dob: '1965-03-14',
+            address: 'Bandra West, Mumbai, Maharashtra',
+            displayPublicly: true
+          },
+          paymentMode: 'CARD',
+          transactionId: 'TXN-900000005',
+          stripePaymentIntentId: 'mock_seed_5',
+          status: 'completed',
+          createdAt: new Date('2026-06-28T11:00:00Z')
+        },
+        {
+          donationId: 'DON-10006',
+          cause: 'agriculture',
+          donationType: 'monthly',
+          generalAmount: 2000,
+          kits: [{ id: 'food', name: 'Food Support Pack', price: 1000, qty: 3 }],
+          kitsAmount: 3000,
+          totalAmount: 5000,
+          donor: {
+            fullName: 'Kiran Devi Yadav',
+            email: 'kiran.yadav@outlook.com',
+            mobile: '9123456780',
+            pan: '',
+            dob: '1988-12-05',
+            address: 'Patna, Bihar',
+            displayPublicly: true
+          },
+          paymentMode: 'UPI',
+          transactionId: 'TXN-900000006',
+          stripePaymentIntentId: 'mock_seed_6',
+          status: 'completed',
+          createdAt: new Date('2026-06-20T08:15:00Z')
+        },
+        {
+          donationId: 'DON-10007',
+          cause: 'education',
+          donationType: 'one-time',
+          generalAmount: 30000,
+          kits: [],
+          kitsAmount: 0,
+          totalAmount: 30000,
+          donor: {
+            fullName: 'Arun Prakash Jha',
+            email: 'arun.jha@corp.in',
+            mobile: '8877665544',
+            pan: 'EEEPJ2222N',
+            dob: '1982-07-19',
+            address: 'Ranchi, Jharkhand',
+            displayPublicly: true
+          },
+          paymentMode: 'NETBANKING',
+          transactionId: 'TXN-900000007',
+          stripePaymentIntentId: 'mock_seed_7',
+          status: 'completed',
+          createdAt: new Date('2026-06-15T13:30:00Z')
+        },
+        {
+          donationId: 'DON-10008',
+          cause: 'health-care',
+          donationType: 'one-time',
+          generalAmount: 20000,
+          kits: [],
+          kitsAmount: 0,
+          totalAmount: 20000,
+          donor: {
+            fullName: 'Confidential Donor',
+            email: 'private@email.com',
+            mobile: '9000000000',
+            pan: '',
+            dob: '',
+            address: '',
+            displayPublicly: false
+          },
+          paymentMode: 'CARD',
+          transactionId: 'TXN-900000008',
+          stripePaymentIntentId: 'mock_seed_8',
+          status: 'completed',
+          createdAt: new Date('2026-06-10T17:00:00Z')
+        }
+      ]);
+      console.log('Donations seeded');
     }
 
     console.log('Database seeding completed!');

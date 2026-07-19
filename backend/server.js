@@ -26,6 +26,7 @@ app.use('/api/donations', require('./routes/donations'));
 app.use('/api/causes', require('./routes/causes'));
 app.use('/api/success-stories', require('./routes/stories'));
 app.use('/api/gallery', require('./routes/gallery'));
+app.use('/api/social', require('./routes/social'));
 app.use('/api/trustees', require('./routes/trustees'));
 app.use('/api/volunteer', require('./routes/volunteers'));
 app.use('/api/contact', require('./routes/contacts'));

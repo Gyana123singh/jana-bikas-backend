@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { Printer, ArrowLeft, Check, ShieldCheck } from 'lucide-react';
+import { donationApi } from '../api';
 
 const ReceiptView = () => {
   const location = useLocation();
@@ -12,20 +13,29 @@ const ReceiptView = () => {
     // If details are passed in state (from Success redirect)
     if (location.state?.transaction) {
       setTxn(location.state.transaction);
-    } else {
-      // Load realistic fallback mock receipt for demonstration if accessed directly
-      setTxn({
-        donationId: id || 'DON-10243',
-        amount: 250000,
-        date: '15/06/2026',
-        donorName: 'Raj Kumar Singhal',
-        email: 'raj.singhal@email.com',
-        mobile: '9876543210',
-        pan: 'AAATJ9024E',
-        cause: 'education',
-        paymentMode: 'UPI',
-        transactionId: 'TXN-902456481'
-      });
+    } else if (id) {
+      donationApi.getDonationById(id)
+        .then(d => {
+          setTxn({
+            donationId: d.donationId,
+            amount: d.totalAmount,
+            date: new Date(d.createdAt).toLocaleDateString('en-IN', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            }),
+            donorName: d.donor.fullName,
+            email: d.donor.email,
+            mobile: d.donor.mobile,
+            pan: d.donor.pan,
+            cause: d.cause,
+            paymentMode: d.paymentMode,
+            transactionId: d.transactionId
+          });
+        })
+        .catch(err => {
+          console.error('Failed to fetch donation receipt details:', err);
+        });
     }
   }, [location.state, id]);
 

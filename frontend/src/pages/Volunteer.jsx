@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Heart, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Heart, CheckCircle2, ShieldAlert, Loader2 } from 'lucide-react';
+import { volunteerApi } from '../api';
 
 const Volunteer = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,8 @@ const Volunteer = () => {
 
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -44,20 +47,36 @@ const Volunteer = () => {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError('');
     if (validate()) {
-      setSubmitted(true);
-      // Reset form
-      setFormData({
-        fullName: '',
-        mobile: '',
-        email: '',
-        interest: 'education',
-        availability: 'weekends',
-        address: '',
-        message: ''
-      });
+      setLoading(true);
+      try {
+        await volunteerApi.submitVolunteer({
+          fullName: formData.fullName,
+          email: formData.email,
+          mobile: formData.mobile,
+          skills: formData.interest, // Mapping frontend 'interest' field to model 'skills'
+          availability: formData.availability,
+          address: formData.address,
+          reason: formData.message // Mapping 'message' to 'reason'
+        });
+        setSubmitted(true);
+        setFormData({
+          fullName: '',
+          mobile: '',
+          email: '',
+          interest: 'education',
+          availability: 'weekends',
+          address: '',
+          message: ''
+        });
+      } catch (err) {
+        setSubmitError(err.response?.data?.message || err.message || 'Failed to submit application. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -239,12 +258,29 @@ const Volunteer = () => {
                 </div>
               </div>
 
+              {submitError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-semibold flex items-center gap-1.5">
+                  <ShieldAlert size={14} />
+                  <span>{submitError}</span>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl font-display font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-md transition-all text-sm mt-2"
+                disabled={loading}
+                className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl font-display font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-md transition-all text-sm mt-2 disabled:opacity-50"
               >
-                <Heart className="w-4 h-4 fill-white" />
-                <span>Submit Application</span>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Submitting Application...</span>
+                  </>
+                ) : (
+                  <>
+                    <Heart className="w-4 h-4 fill-white" />
+                    <span>Submit Application</span>
+                  </>
+                )}
               </button>
             </form>
           )}

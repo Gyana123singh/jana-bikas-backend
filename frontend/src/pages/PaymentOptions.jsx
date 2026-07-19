@@ -255,7 +255,7 @@ const PaymentOptions = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 pt-24 pb-12 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 pt-8 pb-12 space-y-8">
       
       {/* Back to details */}
       <button 

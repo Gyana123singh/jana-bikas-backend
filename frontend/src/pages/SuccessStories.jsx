@@ -1,38 +1,70 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Play, CheckCircle2, TrendingUp } from 'lucide-react';
-import { successStories } from '../data/ngoData';
+import { storiesApi } from '../api';
 
 const SuccessStories = () => {
   const { slug } = useParams();
+  const [stories, setStories] = useState([]);
+  const [story, setStory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        if (slug) {
+          const data = await storiesApi.getStoryBySlug(slug);
+          setStory(data);
+        } else {
+          const data = await storiesApi.getStories();
+          setStories(data);
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err.response?.data?.message || err.message || 'Failed to load content.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
+        <div className="text-slate-500 font-semibold">Loading story details...</div>
+      </div>
+    );
+  }
+
+  if (error || (slug && !story)) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
+        <h2 className="text-3xl font-display font-extrabold text-slate-900">Story Not Found</h2>
+        <p className="text-slate-500">{error || 'The success story you are looking for does not exist or has been relocated.'}</p>
+        <Link 
+          to="/success-stories" 
+          className="inline-flex items-center space-x-2 py-3 px-6 rounded-full font-bold text-white bg-primary-600 hover:bg-primary-500 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Success Stories</span>
+        </Link>
+      </div>
+    );
+  }
 
   // If a slug is provided, render the detail page
-  if (slug) {
-    const story = successStories.find((s) => s.slug === slug);
-
-    if (!story) {
-      return (
-        <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
-          <h2 className="text-3xl font-display font-extrabold text-slate-900">Story Not Found</h2>
-          <p className="text-slate-500">The success story you are looking for does not exist or has been relocated.</p>
-          <Link 
-            to="/success-stories" 
-            className="inline-flex items-center space-x-2 py-3 px-6 rounded-full font-bold text-white bg-primary-600 hover:bg-primary-500 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Success Stories</span>
-          </Link>
-        </div>
-      );
-    }
-
+  if (slug && story) {
     const { title, category, image, videoUrl, longDescription, beforeAfter } = story;
 
     return (
       <div className="pb-24">
         {/* Header section */}
         <section className="relative bg-slate-900 text-white py-20 overflow-hidden">
-          <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style={{ backgroundImage: `url('${image}')` }}></div>
+          <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style={{ backgroundImage: `url('${image || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1200&q=80'}')` }}></div>
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left space-y-4">
             <Link 
               to="/success-stories" 
@@ -59,7 +91,7 @@ const SuccessStories = () => {
             <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-premium flex flex-col justify-between">
               <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
                 <img 
-                  src={image} 
+                  src={image || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80'} 
                   alt={title}
                   className="w-full h-full object-cover"
                 />
@@ -111,19 +143,25 @@ const SuccessStories = () => {
             {/* Right Column: Before & After plus call to action */}
             <div className="space-y-6">
               {/* Before vs After Box */}
-              <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 space-y-6 text-left">
-                <h3 className="font-bold text-slate-900 text-sm">Case Interventions</h3>
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-white border border-red-50 text-left space-y-1">
-                    <span className="text-[9px] uppercase font-bold text-red-500 tracking-wider">Before</span>
-                    <p className="text-[11px] text-slate-650 leading-relaxed">{beforeAfter.before}</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-white border border-emerald-50 text-left space-y-1">
-                    <span className="text-[9px] uppercase font-bold text-emerald-600 tracking-wider">After</span>
-                    <p className="text-[11px] text-slate-650 leading-relaxed">{beforeAfter.after}</p>
+              {beforeAfter && (beforeAfter.before || beforeAfter.after) && (
+                <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 space-y-6 text-left">
+                  <h3 className="font-bold text-slate-900 text-sm">Case Interventions</h3>
+                  <div className="space-y-4">
+                    {beforeAfter.before && (
+                      <div className="p-4 rounded-xl bg-white border border-red-50 text-left space-y-1">
+                        <span className="text-[9px] uppercase font-bold text-red-500 tracking-wider">Before</span>
+                        <p className="text-[11px] text-slate-650 leading-relaxed">{beforeAfter.before}</p>
+                      </div>
+                    )}
+                    {beforeAfter.after && (
+                      <div className="p-4 rounded-xl bg-white border border-emerald-50 text-left space-y-1">
+                        <span className="text-[9px] uppercase font-bold text-emerald-600 tracking-wider">After</span>
+                        <p className="text-[11px] text-slate-650 leading-relaxed">{beforeAfter.after}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Call to Action Box */}
               <div className="p-6 rounded-2xl bg-primary-50 border border-primary-100 text-center space-y-4">
@@ -163,47 +201,51 @@ const SuccessStories = () => {
 
       {/* Grid listing */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {successStories.map((story) => (
-            <div 
-              key={story.id} 
-              className="group bg-white rounded-2xl border border-slate-100 shadow-premium hover:shadow-premium-hover transform hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden"
-            >
-              <div className="relative h-48 w-full overflow-hidden bg-slate-100">
-                <img 
-                  src={story.image} 
-                  alt={story.title} 
-                  className="object-cover w-full h-full transform group-hover:scale-102 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-sm text-white font-display text-[9px] font-bold tracking-widest uppercase">
-                  {story.category}
-                </div>
-              </div>
-              
-              <div className="p-6 flex-grow flex flex-col justify-between space-y-4">
-                <div>
-                  <h3 className="text-base font-display font-bold text-slate-950 leading-snug group-hover:text-primary-600 transition-colors">
-                    {story.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 line-clamp-3 mt-2">
-                    {story.shortDescription}
-                  </p>
+        {stories.length === 0 ? (
+          <div className="text-center py-12 text-slate-500">No active stories available at this moment.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {stories.map((story) => (
+              <div 
+                key={story._id || story.id} 
+                className="group bg-white rounded-2xl border border-slate-100 shadow-premium hover:shadow-premium-hover transform hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden"
+              >
+                <div className="relative h-48 w-full overflow-hidden bg-slate-100">
+                  <img 
+                    src={story.image || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80'} 
+                    alt={story.title} 
+                    className="object-cover w-full h-full transform group-hover:scale-102 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-sm text-white font-display text-[9px] font-bold tracking-widest uppercase">
+                    {story.category}
+                  </div>
                 </div>
                 
-                <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-                  <Link 
-                    to={`/success-stories/${story.slug}`}
-                    className="flex items-center space-x-1.5 text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors"
-                  >
-                    <span>Read Full Story</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                <div className="p-6 flex-grow flex flex-col justify-between space-y-4">
+                  <div>
+                    <h3 className="text-base font-display font-bold text-slate-950 leading-snug group-hover:text-primary-600 transition-colors">
+                      {story.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 line-clamp-3 mt-2">
+                      {story.shortDescription}
+                    </p>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                    <Link 
+                      to={`/success-stories/${story.slug}`}
+                      className="flex items-center space-x-1.5 text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors"
+                    >
+                      <span>Read Full Story</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Mail, Phone, MapPin, Send, Youtube, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 import useSiteContent from '../hooks/useSiteContent';
+import { socialApi } from '../api';
 
 const Footer = () => {
   const content = useSiteContent();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [error, setError] = useState('');
+  const [socialPlatforms, setSocialPlatforms] = useState([]);
+
+  useEffect(() => {
+    socialApi.getPlatforms()
+      .then(data => setSocialPlatforms(data))
+      .catch(err => console.error(err));
+  }, []);
 
   const handleSubscribe = (e) => {
     e.preventDefault();
@@ -37,21 +45,41 @@ const Footer = () => {
             {content.footerText}
           </p>
           <div className="flex space-x-3 pt-2">
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-red-600 hover:text-white transition-colors">
-              <Youtube className="w-4 h-4" />
-            </a>
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-blue-600 hover:text-white transition-colors">
-              <Facebook className="w-4 h-4" />
-            </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-pink-600 hover:text-white transition-colors">
-              <Instagram className="w-4 h-4" />
-            </a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-sky-500 hover:text-white transition-colors">
-              <Twitter className="w-4 h-4" />
-            </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-blue-700 hover:text-white transition-colors">
-              <Linkedin className="w-4 h-4" />
-            </a>
+            {socialPlatforms.map((p) => {
+              const nameLower = p.name.toLowerCase();
+              let icon = null;
+              let hoverColor = "hover:bg-primary-600";
+              
+              if (nameLower.includes('youtube')) {
+                icon = <Youtube className="w-4 h-4" />;
+                hoverColor = "hover:bg-red-600";
+              } else if (nameLower.includes('facebook')) {
+                icon = <Facebook className="w-4 h-4" />;
+                hoverColor = "hover:bg-blue-600";
+              } else if (nameLower.includes('instagram')) {
+                icon = <Instagram className="w-4 h-4" />;
+                hoverColor = "hover:bg-pink-600";
+              } else if (nameLower.includes('linkedin')) {
+                icon = <Linkedin className="w-4 h-4" />;
+                hoverColor = "hover:bg-blue-700";
+              } else {
+                icon = <Twitter className="w-4 h-4" />;
+                hoverColor = "hover:bg-sky-500";
+              }
+
+              return (
+                <a 
+                  key={p._id} 
+                  href={p.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className={`p-2 rounded-lg bg-slate-800 text-slate-400 transition-colors ${hoverColor} hover:text-white`}
+                  title={p.name}
+                >
+                  {icon}
+                </a>
+              );
+            })}
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { CausesProvider } from './context/CausesContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -13,6 +14,8 @@ import Donate from './pages/Donate';
 import PaymentOptions from './pages/PaymentOptions';
 import DonationSuccess from './pages/DonationSuccess';
 import ReceiptView from './pages/ReceiptView';
+import CertificateView from './pages/CertificateView';
+import Form10BeView from './pages/Form10BeView';
 import Downloads from './pages/Downloads';
 import BankDetails from './pages/BankDetails';
 import Volunteer from './pages/Volunteer';
@@ -42,6 +45,8 @@ function AppContent() {
       <Route path="/payment-options" element={<PaymentOptions />} />
       <Route path="/donation-success" element={<DonationSuccess />} />
       <Route path="/donation/:id/receipt" element={<ReceiptView />} />
+      <Route path="/donation/:id/certificate" element={<CertificateView />} />
+      <Route path="/donation/:id/10be" element={<Form10BeView />} />
       
       {/* Support Modules */}
       <Route path="/downloads" element={<Downloads />} />
@@ -70,7 +75,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <CausesProvider>
+        <AppContent />
+      </CausesProvider>
     </Router>
   );
 }

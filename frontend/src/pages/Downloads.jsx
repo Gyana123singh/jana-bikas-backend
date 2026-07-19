@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Search, FileText, Download, ShieldCheck, AlertCircle } from 'lucide-react';
-import { mockDownloads } from '../data/ngoData';
+import { useNavigate } from 'react-router-dom';
+import { Search, FileText, Download, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { donationApi } from '../api';
 
 const Downloads = () => {
+  const navigate = useNavigate();
   const [donationId, setDonationId] = useState('');
   const [mobile, setMobile] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!donationId.trim() || !mobile.trim()) {
       setError('Please fill in both fields.');
@@ -17,20 +20,41 @@ const Downloads = () => {
     }
 
     setError('');
-    const match = mockDownloads.find(
-      (d) => d.donationId.toUpperCase() === donationId.trim().toUpperCase() && d.mobile === mobile.trim()
-    );
-
-    if (match) {
-      setSearchResult(match);
-    } else {
+    setLoading(true);
+    setSearched(false);
+    
+    try {
+      const result = await donationApi.searchDonations({
+        donationId: donationId.trim(),
+        mobile: mobile.trim()
+      });
+      setSearchResult(result);
+      setSearched(true);
+    } catch (err) {
       setSearchResult(null);
+      setSearched(true);
+      setError(err.response?.data?.message || 'No completed donation matches the credentials provided.');
+    } finally {
+      setLoading(false);
     }
-    setSearched(true);
   };
 
-  const triggerDownload = (docName) => {
-    alert(`Downloading ${docName} for ID: ${searchResult.donationId}...\nThis is a simulation.`);
+  const triggerDownload = (docType) => {
+    if (!searchResult) return;
+    
+    if (docType === 'receipt') {
+      navigate(`/donation/${searchResult.donationId}/receipt`, { 
+        state: { transaction: searchResult } 
+      });
+    } else if (docType === 'certificate') {
+      navigate(`/donation/${searchResult.donationId}/certificate`, { 
+        state: { transaction: searchResult } 
+      });
+    } else if (docType === '10be') {
+      navigate(`/donation/${searchResult.donationId}/10be`, { 
+        state: { transaction: searchResult } 
+      });
+    }
   };
 
   return (
@@ -63,7 +87,7 @@ const Downloads = () => {
               <label className="text-xs font-semibold text-slate-600 block">Donation ID / Receipt Number</label>
               <input
                 type="text"
-                placeholder="e.g. DON-10243"
+                placeholder="e.g. DON-10001"
                 value={donationId}
                 onChange={(e) => setDonationId(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg py-2 px-3 text-sm font-semibold uppercase"
@@ -81,30 +105,45 @@ const Downloads = () => {
               />
             </div>
 
-            {error && <p className="text-red-500 text-xs">{error}</p>}
+            {error && !searched && <p className="text-red-500 text-xs font-semibold">{error}</p>}
 
             <button
               type="submit"
-              className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl font-display font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-md transition-all text-sm"
+              disabled={loading}
+              className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl font-display font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-md transition-all text-sm disabled:opacity-50"
             >
-              <Search className="w-4 h-4" />
-              <span>Search Documents</span>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Searching Records...</span>
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4" />
+                  <span>Search Documents</span>
+                </>
+              )}
             </button>
           </form>
 
           <div className="p-4 rounded-xl bg-slate-50 text-[10px] text-slate-500 leading-normal flex items-start space-x-2">
             <AlertCircle className="w-4 h-4 text-primary-600 flex-shrink-0 mt-0.5" />
             <span>
-              <strong>Privacy Guideline:</strong> For security, we require both the exact Donation ID and the 10-digit mobile number submitted during checkout. You can test lookup using mock details: Donation ID: <strong>DON-10243</strong>, Mobile: <strong>9876543210</strong>.
+              <strong>Privacy Guideline:</strong> For security, we require both the exact Donation ID and the 10-digit mobile number submitted during checkout. You can test lookup using mock details: Donation ID: <strong>DON-10001</strong>, Mobile: <strong>9876543210</strong>.
             </span>
           </div>
         </div>
 
         {/* Search results rendering */}
         <div className="space-y-6 text-left">
-          {searched ? (
+          {loading ? (
+            <div className="bg-slate-50 border border-slate-100 p-8 rounded-2xl flex flex-col items-center justify-center text-slate-400 text-xs gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+              <span>Verifying authorization logs...</span>
+            </div>
+          ) : searched ? (
             searchResult ? (
-              <div className="bg-white border border-slate-100 shadow-premium p-6 md:p-8 rounded-2xl space-y-6">
+              <div className="bg-white border border-slate-100 shadow-premium p-6 md:p-8 rounded-2xl space-y-6 animate-fade-in">
                 <div>
                   <span className="text-[10px] text-primary-600 uppercase font-bold tracking-wider">Supporter Records Found</span>
                   <h3 className="text-lg font-bold text-slate-900 mt-1">{searchResult.donorName}</h3>
@@ -124,7 +163,7 @@ const Downloads = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => triggerDownload('Payment Receipt')}
+                      onClick={() => triggerDownload('receipt')}
                       className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors"
                       aria-label="Download payment receipt"
                     >
@@ -144,7 +183,7 @@ const Downloads = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => triggerDownload('80G Certificate')}
+                      onClick={() => triggerDownload('certificate')}
                       className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors"
                       aria-label="Download 80G Certificate"
                     >
@@ -164,7 +203,7 @@ const Downloads = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => triggerDownload('Form 10BE Statement')}
+                      onClick={() => triggerDownload('10be')}
                       className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors"
                       aria-label="Download Form 10BE"
                     >
@@ -174,11 +213,11 @@ const Downloads = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-red-50/50 border border-red-150 p-8 rounded-2xl text-center space-y-3">
+              <div className="bg-red-50/50 border border-red-150 p-8 rounded-2xl text-center space-y-3 animate-fade-in">
                 <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
                 <h4 className="font-bold text-red-950 text-sm">No Records Found</h4>
                 <p className="text-xs text-red-800 leading-relaxed max-w-sm mx-auto">
-                  We couldn't locate any records matching that Donation ID and Mobile number combination. Please double check characters or contact our support cell.
+                  {error || "We couldn't locate any completed records matching that Donation ID and Mobile number combination. Please verify your details."}
                 </p>
               </div>
             )

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { CheckCircle2, FileText, Download, Share2, Facebook, Twitter, Phone as WhatsappIcon, ArrowRight } from 'lucide-react';
+import { CheckCircle2, FileText, Download, Share2, Facebook, Twitter, Phone as WhatsappIcon, ArrowRight, Award } from 'lucide-react';
 
 import { donationApi } from '../api';
 
@@ -68,7 +68,7 @@ const DonationSuccess = () => {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 pt-48 pb-16 text-center space-y-4">
+      <div className="max-w-3xl mx-auto px-4 pt-24 pb-16 text-center space-y-4">
         <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
         <h2 className="text-xl font-bold text-slate-800">Verifying payment status...</h2>
         <p className="text-slate-500 text-sm">Please do not close this window or click back.</p>
@@ -78,7 +78,7 @@ const DonationSuccess = () => {
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto px-4 pt-48 pb-16 text-center space-y-4">
+      <div className="max-w-3xl mx-auto px-4 pt-24 pb-16 text-center space-y-4">
         <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-3xl font-bold font-sans">!</div>
         <h2 className="text-xl font-bold text-red-600">Payment Verification Failed</h2>
         <p className="text-slate-500 text-sm">{error}</p>
@@ -158,28 +158,30 @@ const DonationSuccess = () => {
         </Link>
 
         {/* 80G Certificate */}
-        <button
-          onClick={() => handleMockDownload('80G Tax Exemption Certificate')}
+        <Link 
+          to={`/donation/${donationId}/certificate`}
+          state={{ transaction: transaction }}
           className="bg-white border border-slate-100 p-6 rounded-2xl shadow-premium hover:shadow-premium-hover flex flex-col items-center space-y-3 group text-center"
         >
           <div className="w-10 h-10 rounded-xl bg-accent-50 text-accent-600 flex items-center justify-center">
-            <Download className="w-5 h-5" />
+            <Award className="w-5 h-5" />
           </div>
           <h4 className="font-bold text-xs text-slate-900 group-hover:text-accent-600 transition-colors">80G Certificate</h4>
-          <span className="text-[10px] text-slate-400 leading-normal">Get instant tax exemption PDF</span>
-        </button>
+          <span className="text-[10px] text-slate-400 leading-normal">Get instant tax exemption certificate</span>
+        </Link>
 
         {/* 10BE Form */}
-        <button
-          onClick={() => handleMockDownload('Form 10BE Certificate')}
+        <Link 
+          to={`/donation/${donationId}/10be`}
+          state={{ transaction: transaction }}
           className="bg-white border border-slate-100 p-6 rounded-2xl shadow-premium hover:shadow-premium-hover flex flex-col items-center space-y-3 group text-center"
         >
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <Download className="w-5 h-5" />
+            <FileText className="w-5 h-5" />
           </div>
           <h4 className="font-bold text-xs text-slate-900 group-hover:text-emerald-600 transition-colors">10BE Form</h4>
-          <span className="text-[10px] text-slate-400 leading-normal">Annual certificate when issued</span>
-        </button>
+          <span className="text-[10px] text-slate-400 leading-normal">Annual certificate of donation</span>
+        </Link>
       </div>
 
       {/* 4. Social Sharing & Home Redirects */}

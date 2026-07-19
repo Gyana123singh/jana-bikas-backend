@@ -1,13 +1,22 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Heart, ArrowLeft, CheckCircle2, ChevronRight } from 'lucide-react';
-import { causes } from '../data/ngoData';
+import { useCauses } from '../context/CausesContext';
 
 const CauseDetail = () => {
   const { slug } = useParams();
+  const { causes, loading } = useCauses();
   
   // Find matching cause
-  const cause = causes.find((c) => c.slug === slug);
+  const cause = (causes || []).find((c) => c.slug === slug);
+
+  if (loading) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
+        <div className="text-slate-500 font-semibold">Loading program details...</div>
+      </div>
+    );
+  }
 
   if (!cause) {
     return (

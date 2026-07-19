@@ -5,6 +5,9 @@ import Footer from './Footer';
 
 const Layout = ({ children }) => {
   const { pathname } = useLocation();
+  const hideHeader = pathname === '/payment-options';
+  const isHomePage = pathname === '/';
+  const needsTopPadding = !isHomePage && !hideHeader;
 
   // Scroll to top of page on route change
   useEffect(() => {
@@ -13,10 +16,10 @@ const Layout = ({ children }) => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <StickyHeader />
+      {!hideHeader && <StickyHeader />}
       
       {/* Main Content Area */}
-      <main className="flex-grow">
+      <main className={`flex-grow ${needsTopPadding ? 'pt-12' : ''}`}>
         {children}
       </main>
 

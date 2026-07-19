@@ -44,7 +44,7 @@ const donationSchema = new mongoose.Schema({
   },
   paymentMode: {
     type: String,
-    enum: ['UPI', 'CARD', 'NETBANKING'],
+    enum: ['UPI', 'CARD', 'NETBANKING', 'BANK_TRANSFER', 'QR_SCAN'],
   },
   transactionId: {
     type: String,

@@ -76,6 +76,16 @@
   transition: all 0.3s ease;
 }
 
+@media (max-width: 768px) {
+  .swiper-button-next,
+  .swiper-button-prev {
+    display: none !important;
+  }
+  p {
+    text-align: justify !important;
+  }
+}
+
 /* Custom styles for printing receipts */
 @media print {
   body {

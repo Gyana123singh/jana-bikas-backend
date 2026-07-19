@@ -3,8 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Heart, ShieldCheck, ShoppingBag, Info, Plus, Minus } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectFade, Navigation, Pagination } from 'swiper/modules';
-import { causes } from '../data/ngoData';
 import useSiteContent from '../hooks/useSiteContent';
+import { useCauses } from '../context/CausesContext';
 
 import { donationApi } from '../api';
 
@@ -34,6 +34,7 @@ const Donate = () => {
     }
   ];
 
+  const { causes } = useCauses();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialCause = searchParams.get('cause') || 'general';
@@ -45,12 +46,30 @@ const Donate = () => {
   const [customAmount, setCustomAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Essentials Packages State
-  const [kits, setKits] = useState([
-    { id: 'edu', name: 'Education Kit', price: 500, description: 'Books and stationery for a child.', qty: 0 },
-    { id: 'food', name: 'Food Support Pack', price: 1000, description: 'Dry grocery provisions for a family.', qty: 0 },
-    { id: 'med', name: 'Medical Health Kit', price: 2500, description: 'Diagnostic checks and basic medicines.', qty: 0 }
-  ]);
+  // Essentials Packages State dynamically loaded
+  const [kits, setKits] = useState([]);
+
+  useEffect(() => {
+    if (content.essentialsKits) {
+      setKits(content.essentialsKits.map(k => ({ ...k, qty: 0 })));
+    } else {
+      setKits([
+        { id: 'edu', name: 'Education Kit', price: 500, description: 'Books and stationery for a child.', qty: 0 },
+        { id: 'food', name: 'Food Support Pack', price: 1000, description: 'Dry grocery provisions for a family.', qty: 0 },
+        { id: 'med', name: 'Medical Health Kit', price: 2500, description: 'Diagnostic checks and basic medicines.', qty: 0 }
+      ]);
+    }
+  }, [content.essentialsKits]);
+
+  // Load presets dynamically and match presetAmount
+  const presetOptions = content.donationPresets || [500, 1000, 2000, 5000, 10000, 15000, 20000, 30000];
+
+  useEffect(() => {
+    const presets = content.donationPresets || [500, 1000, 2000, 5000, 10000, 15000, 20000, 30000];
+    if (presets.length > 0 && !presets.includes(presetAmount) && presetAmount !== 0) {
+      setPresetAmount(presets[0]);
+    }
+  }, [content.donationPresets]);
 
   // Form Fields State
   const [formData, setFormData] = useState({
@@ -64,8 +83,6 @@ const Donate = () => {
   });
 
   const [errors, setErrors] = useState({});
-
-  const presetOptions = [500, 1000, 2000, 5000, 10000, 15000, 20000, 30000];
 
   // Recalculate totals
   const generalAmount = customAmount ? parseFloat(customAmount) : presetAmount;
@@ -275,8 +292,8 @@ const Donate = () => {
                   className="w-full bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg py-2.5 px-4 text-sm"
                 >
                   <option value="general">General Support (All Programs)</option>
-                  {causes.map((c) => (
-                    <option key={c.id} value={c.slug}>{c.title}</option>
+                  {(causes || []).map((c) => (
+                    <option key={c._id || c.id} value={c.slug}>{c.title}</option>
                   ))}
                 </select>
               </div>

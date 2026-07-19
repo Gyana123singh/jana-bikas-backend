@@ -1,18 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Play, Calendar, MapPin, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
-import { mockGallery } from '../data/ngoData';
+import { galleryApi } from '../api';
+import useSiteContent from '../hooks/useSiteContent';
 
 const Gallery = () => {
+  const siteContent = useSiteContent();
   const [activeTab, setActiveTab] = useState('photos'); // 'photos' | 'videos'
   const [selectedPhotoFilter, setSelectedPhotoFilter] = useState('All');
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const [playingVideo, setPlayingVideo] = useState(null);
+  
+  // Dynamic categories with "All" prepended
+  const photoCategories = ['All', ...(siteContent.galleryCategories || ['Education', 'Health Care', 'Environment', 'Agriculture', 'Empowerment'])];
 
-  const photoCategories = ['All', 'Education', 'Health Care', 'Environment', 'Agriculture', 'Empowerment'];
+  // Dynamic gallery items
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    galleryApi.getItems()
+      .then(data => setItems(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const photos = items.filter(i => i.type === 'photo');
+  const videos = items.filter(i => i.type === 'video');
 
   const filteredPhotos = selectedPhotoFilter === 'All' 
-    ? mockGallery.photos 
-    : mockGallery.photos.filter(p => p.category === selectedPhotoFilter);
+    ? photos 
+    : photos.filter(p => p.category === selectedPhotoFilter);
 
   return (
     <div className="space-y-16 pb-16">
@@ -81,100 +98,122 @@ const Gallery = () => {
 
         {/* 3. Photos Grid */}
         {activeTab === 'photos' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPhotos.map((photo) => (
-              <div 
-                key={photo.id}
-                onClick={() => setLightboxPhoto(photo)}
-                className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 shadow-premium hover:shadow-premium-hover cursor-pointer transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <img 
-                  src={photo.url} 
-                  alt={photo.title}
-                  className="w-full h-full object-cover transform group-hover:scale-102 transition-transform duration-500"
-                  loading="lazy"
-                />
-                
-                {/* Hover overlay details */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-6 flex flex-col justify-end text-white text-left space-y-2">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-accent-300">
-                    {photo.category}
-                  </span>
-                  <h4 className="text-base font-bold leading-snug">{photo.title}</h4>
-                  <div className="flex items-center space-x-4 text-[10px] text-slate-300 pt-1">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{photo.date}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{photo.location}</span>
+          loading ? (
+            <div className="text-center py-12 text-slate-500 font-semibold">Loading gallery photos...</div>
+          ) : filteredPhotos.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">No photos found in this category.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPhotos.map((photo) => (
+                <div 
+                  key={photo._id || photo.id}
+                  onClick={() => setLightboxPhoto(photo)}
+                  className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 shadow-premium hover:shadow-premium-hover cursor-pointer transform hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  <img 
+                    src={photo.url} 
+                    alt={photo.title}
+                    className="w-full h-full object-cover transform group-hover:scale-102 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  
+                  {/* Hover overlay details */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-6 flex flex-col justify-end text-white text-left space-y-2">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-accent-300">
+                      {photo.category}
+                    </span>
+                    <h4 className="text-base font-bold leading-snug">{photo.title}</h4>
+                    <div className="flex items-center space-x-4 text-[10px] text-slate-300 pt-1">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{photo.date}</span>
+                      </div>
+                      {photo.location && (
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>{photo.location}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         )}
 
         {/* 4. Videos Grid */}
         {activeTab === 'videos' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockGallery.videos.map((video) => (
-              <div 
-                key={video.id} 
-                className="bg-white rounded-2xl border border-slate-100 shadow-premium overflow-hidden flex flex-col h-full"
-              >
-                {/* Thumbnail / Embed Frame */}
-                {playingVideo === video.id ? (
-                  <div className="relative aspect-[16/9] w-full">
-                    <iframe
-                      src={`${video.embedUrl}?autoplay=1`}
-                      title={video.title}
-                      className="absolute inset-0 w-full h-full border-none"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                  </div>
-                ) : (
+          loading ? (
+            <div className="text-center py-12 text-slate-500 font-semibold">Loading gallery videos...</div>
+          ) : videos.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">No videos found in the library.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {videos.map((video) => {
+                const vidId = video._id || video.id;
+                return (
                   <div 
-                    onClick={() => setPlayingVideo(video.id)}
-                    className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden cursor-pointer group"
+                    key={vidId} 
+                    className="bg-white rounded-2xl border border-slate-100 shadow-premium overflow-hidden flex flex-col h-full"
                   >
-                    <img 
-                      src={video.thumbnail} 
-                      alt={video.title} 
-                      className="w-full h-full object-cover transform group-hover:scale-102 transition-transform duration-500"
-                    />
-                    {/* Play Button Icon */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-950/30 group-hover:bg-slate-950/40 transition-colors">
-                      <div className="w-14 h-14 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
-                        <Play className="w-6 h-6 fill-white ml-0.5" />
+                    {/* Thumbnail / Embed Frame */}
+                    {playingVideo === vidId ? (
+                      <div className="relative aspect-[16/9] w-full">
+                        <iframe
+                          src={`${video.embedUrl}?autoplay=1`}
+                          title={video.title}
+                          className="absolute inset-0 w-full h-full border-none"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => setPlayingVideo(vidId)}
+                        className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden cursor-pointer group"
+                      >
+                        <img 
+                          src={video.thumbnail || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=80'} 
+                          alt={video.title} 
+                          className="w-full h-full object-cover transform group-hover:scale-102 transition-transform duration-500"
+                        />
+                        {/* Play Button Icon */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/30 group-hover:bg-slate-950/40 transition-colors">
+                          <div className="w-14 h-14 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
+                            <Play className="w-6 h-6 fill-white ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-5 flex-grow flex flex-col justify-between">
+                      <div className="space-y-2 text-left">
+                        <span className="inline-block rounded-lg bg-primary-50 px-2.5 py-0.5 text-[9px] font-bold text-primary-600 uppercase">
+                          {video.category || 'General'}
+                        </span>
+                        <h4 className="font-bold text-sm text-slate-900 leading-snug line-clamp-2">{video.title}</h4>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold pt-4 mt-2 border-t border-slate-50">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>{video.date}</span>
+                        </div>
+                        {playingVideo === vidId && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setPlayingVideo(null); }}
+                            className="text-primary-600 hover:text-primary-700"
+                          >
+                            Close Video
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
-                )}
-
-                <div className="p-5 flex-grow flex flex-col justify-between">
-                  <h4 className="font-bold text-sm text-slate-900 leading-snug">{video.title}</h4>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold pt-4 mt-2 border-t border-slate-50">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{video.date}</span>
-                    </div>
-                    {playingVideo === video.id && (
-                      <button 
-                        onClick={() => setPlayingVideo(null)}
-                        className="text-primary-600 hover:text-primary-700"
-                      >
-                        Close Video
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )
         )}
 
       </section>
@@ -208,10 +247,12 @@ const Gallery = () => {
                 <Calendar className="w-4 h-4" />
                 <span>{lightboxPhoto.date}</span>
               </div>
-              <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4" />
-                <span>{lightboxPhoto.location}</span>
-              </div>
+              {lightboxPhoto.location && (
+                <div className="flex items-center space-x-1">
+                  <MapPin className="w-4 h-4" />
+                  <span>{lightboxPhoto.location}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

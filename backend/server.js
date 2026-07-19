@@ -49,8 +49,14 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
+
+  // Fallback: serve index.html for all non-API GET requests (React SPA routing)
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
+    } else {
+      next();
+    }
   });
 }
 

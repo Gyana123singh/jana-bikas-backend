@@ -1,5 +1,6 @@
 const Donation = require('../models/Donation');
 const Cause = require('../models/Cause');
+const sendMail = require('../config/email');
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const isStripeEnabled = Boolean(stripeSecretKey) && !stripeSecretKey.includes('placeholder');
 const stripe = isStripeEnabled ? require('stripe')(stripeSecretKey) : null;
@@ -197,6 +198,40 @@ const confirmDonation = async (req, res) => {
       paymentMode,
       transactionId,
     });
+
+    // Send confirmation email to donor (fire-and-forget)
+    sendMail({
+      to: donor.email,
+      subject: `Payment Confirmed — ${donationId} | Jana Bikas NGO`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1e293b;">
+          <h2 style="margin:0 0 8px; color:#0f172a;">✅ Donation Successful!</h2>
+          <p style="margin:0 0 20px; color:#64748b; font-size:14px;">Thank you, <strong>${donor.fullName}</strong>! Your online payment has been verified and recorded.</p>
+          
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:20px;">
+            <table style="width:100%; font-size:13px; border-collapse:collapse;">
+              <tr><td style="padding:6px 0; color:#94a3b8;">Donation ID</td><td style="padding:6px 0; text-align:right; font-weight:700; font-family:monospace;">${donationId}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Amount</td><td style="padding:6px 0; text-align:right; font-weight:700;">₹${Number(totalAmount).toLocaleString('en-IN')}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Payment Mode</td><td style="padding:6px 0; text-align:right; font-weight:600;">${paymentMode}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Transaction Ref</td><td style="padding:6px 0; text-align:right; font-family:monospace; font-size:11px;">${transactionId}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Cause</td><td style="padding:6px 0; text-align:right; font-weight:600; text-transform:capitalize;">${cause.replace('-', ' ')}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Status</td><td style="padding:6px 0; text-align:right;"><span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700;">✓ Completed</span></td></tr>
+            </table>
+          </div>
+          
+          <div style="background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:16px; margin-bottom:20px;">
+            <p style="margin:0; font-size:12px; color:#065f46;">
+              <strong>📌 Your Documents:</strong> You can access your <strong>Receipt</strong>, <strong>80G Tax Exemption Certificate</strong>, and <strong>Form 10BE</strong> anytime from the <strong>Download Center</strong> using your Donation ID <strong>${donationId}</strong> and Mobile Number <strong>${donor.mobile}</strong>.
+            </p>
+          </div>
+          
+          <p style="margin:0 0 12px; font-size:12px; color:#94a3b8;">Your contribution is making real impact in communities that need it most. Thank you for being a changemaker!</p>
+          
+          <hr style="border:none; border-top:1px solid #e2e8f0; margin:24px 0;" />
+          <p style="margin:0; font-size:11px; color:#cbd5e1;">This is an automated email from Jana Bikas NGO. Please do not reply.</p>
+        </div>
+      `
+    }).catch(() => {});
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -312,6 +347,40 @@ const updateDonation = async (req, res) => {
           await causeDoc.save();
         }
       }
+
+      // Send approval confirmation email to donor
+      if (updated.donor && updated.donor.email) {
+        sendMail({
+          to: updated.donor.email,
+          subject: `Donation Verified ✓ — ${updated.donationId} | Jana Bikas NGO`,
+          html: `
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1e293b;">
+              <h2 style="margin:0 0 8px; color:#0f172a;">🎉 Payment Verified & Approved!</h2>
+              <p style="margin:0 0 20px; color:#64748b; font-size:14px;">Dear <strong>${updated.donor.fullName}</strong>, your offline donation has been verified by our finance team.</p>
+              
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:20px;">
+                <table style="width:100%; font-size:13px; border-collapse:collapse;">
+                  <tr><td style="padding:6px 0; color:#94a3b8;">Donation ID</td><td style="padding:6px 0; text-align:right; font-weight:700; font-family:monospace;">${updated.donationId}</td></tr>
+                  <tr><td style="padding:6px 0; color:#94a3b8;">Amount</td><td style="padding:6px 0; text-align:right; font-weight:700;">₹${Number(updated.totalAmount).toLocaleString('en-IN')}</td></tr>
+                  <tr><td style="padding:6px 0; color:#94a3b8;">Payment Mode</td><td style="padding:6px 0; text-align:right; font-weight:600;">${updated.paymentMode}</td></tr>
+                  <tr><td style="padding:6px 0; color:#94a3b8;">Status</td><td style="padding:6px 0; text-align:right;"><span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700;">✓ Completed</span></td></tr>
+                </table>
+              </div>
+              
+              <div style="background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:16px; margin-bottom:20px;">
+                <p style="margin:0; font-size:12px; color:#065f46;">
+                  <strong>📄 Documents Ready:</strong> Your <strong>Receipt</strong>, <strong>80G Tax Exemption Certificate</strong>, and <strong>Form 10BE</strong> are now officially available. Visit the <strong>Download Center</strong> with your Donation ID <strong>${updated.donationId}</strong> and Mobile <strong>${updated.donor.mobile}</strong> to access them.
+                </p>
+              </div>
+              
+              <p style="margin:0 0 12px; font-size:12px; color:#94a3b8;">Your name now appears on our Respected Donors board. Thank you for your generosity!</p>
+              
+              <hr style="border:none; border-top:1px solid #e2e8f0; margin:24px 0;" />
+              <p style="margin:0; font-size:11px; color:#cbd5e1;">This is an automated email from Jana Bikas NGO. Please do not reply.</p>
+            </div>
+          `
+        }).catch(() => {});
+      }
     }
 
     res.json(updated);
@@ -417,11 +486,11 @@ const searchPublicDonation = async (req, res) => {
     const donation = await Donation.findOne({
       donationId: { $regex: new RegExp(`^${donationId.trim()}$`, 'i') },
       'donor.mobile': mobile.trim(),
-      status: 'completed'
+      status: { $in: ['completed', 'pending'] }
     });
 
     if (!donation) {
-      return res.status(404).json({ message: 'No completed donation record matches that ID and Mobile number.' });
+      return res.status(404).json({ message: 'No donation record matches that ID and Mobile number.' });
     }
 
     res.json({
@@ -434,6 +503,7 @@ const searchPublicDonation = async (req, res) => {
       cause: donation.cause,
       paymentMode: donation.paymentMode,
       transactionId: donation.transactionId,
+      status: donation.status,
       date: new Date(donation.createdAt).toLocaleDateString('en-IN', {
         year: 'numeric',
         month: 'short',
@@ -475,6 +545,38 @@ const createOfflineDonation = async (req, res) => {
     });
 
     res.status(201).json(donation);
+
+    // Send confirmation email to donor (fire-and-forget, don't block response)
+    sendMail({
+      to: donor.email,
+      subject: `Offline Donation Registered — ${donationId} | Jana Bikas NGO`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1e293b;">
+          <h2 style="margin:0 0 8px; color:#0f172a;">🌱 Donation Intent Registered</h2>
+          <p style="margin:0 0 20px; color:#64748b; font-size:14px;">Thank you, <strong>${donor.fullName}</strong>. Your offline donation has been registered successfully.</p>
+          
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:20px;">
+            <table style="width:100%; font-size:13px; border-collapse:collapse;">
+              <tr><td style="padding:6px 0; color:#94a3b8;">Donation ID</td><td style="padding:6px 0; text-align:right; font-weight:700; font-family:monospace;">${donationId}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Amount</td><td style="padding:6px 0; text-align:right; font-weight:700;">₹${Number(totalAmount).toLocaleString('en-IN')}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Payment Mode</td><td style="padding:6px 0; text-align:right; font-weight:600;">${paymentMode || 'BANK_TRANSFER'}</td></tr>
+              <tr><td style="padding:6px 0; color:#94a3b8;">Status</td><td style="padding:6px 0; text-align:right;"><span style="background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700;">⏳ Pending Verification</span></td></tr>
+            </table>
+          </div>
+          
+          <div style="background:#ecfdf5; border:1px solid #d1fae5; border-radius:12px; padding:16px; margin-bottom:20px;">
+            <p style="margin:0; font-size:12px; color:#065f46;">
+              <strong>📌 Important:</strong> Save your <strong>Donation ID: ${donationId}</strong> and your <strong>Mobile Number: ${donor.mobile}</strong>. You can use these anytime to retrieve your Receipt, 80G Certificate, and 10BE Form from our <strong>Download Center</strong>.
+            </p>
+          </div>
+          
+          <p style="margin:0; font-size:12px; color:#94a3b8;">Once our admin team verifies your payment against bank ledger records, your donation will be marked as Completed and will appear on the Respected Donors board.</p>
+          
+          <hr style="border:none; border-top:1px solid #e2e8f0; margin:24px 0;" />
+          <p style="margin:0; font-size:11px; color:#cbd5e1;">This is an automated email from Jana Bikas NGO. Please do not reply.</p>
+        </div>
+      `
+    }).catch(() => {});
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -147,8 +147,23 @@ const Downloads = () => {
                 <div>
                   <span className="text-[10px] text-primary-600 uppercase font-bold tracking-wider">Supporter Records Found</span>
                   <h3 className="text-lg font-bold text-slate-900 mt-1">{searchResult.donorName}</h3>
-                  <p className="text-xs text-slate-400">Donation Date: {searchResult.date} | Sum: ₹{searchResult.amount.toLocaleString('en-IN')}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-xs text-slate-400">Donation Date: {searchResult.date} | Sum: ₹{searchResult.amount.toLocaleString('en-IN')}</p>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      searchResult.status === 'completed' 
+                        ? 'bg-emerald-100 text-emerald-700' 
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {searchResult.status === 'completed' ? '✓ Verified' : '⏳ Pending Verification'}
+                    </span>
+                  </div>
                 </div>
+
+                {searchResult.status === 'pending' && (
+                  <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-800 leading-relaxed">
+                    <strong>Note:</strong> Your offline payment is awaiting admin verification. Documents are available for preview, but the official certificates will be issued once verification is complete.
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 gap-3">
                   {/* Payment Receipt */}

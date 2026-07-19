@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Copy, Check, ShieldCheck, QrCode, ArrowRight, CheckCircle, AlertCircle, Heart, Landmark, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Copy, Check, ShieldCheck, QrCode, ArrowRight, CheckCircle, AlertCircle, Heart, Landmark, Loader2, FileText, Award } from 'lucide-react';
 import useSiteContent from '../hooks/useSiteContent';
 import { useCauses } from '../context/CausesContext';
 import { donationApi } from '../api';
@@ -19,6 +20,14 @@ const BankDetails = () => {
     qrCodeUrl: ""
   };
 
+  // Restore persisted offline donation from localStorage (survives refresh)
+  const savedDonation = (() => {
+    try {
+      const raw = localStorage.getItem('offlineDonation');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  })();
+
   // Form states
   const [formData, setFormData] = useState({
     fullName: '',
@@ -35,12 +44,33 @@ const BankDetails = () => {
 
   const [formError, setFormError] = useState('');
   const [registering, setRegistering] = useState(false);
-  const [registeredDonation, setRegisteredDonation] = useState(null);
+  const [registeredDonation, setRegisteredDonation] = useState(savedDonation?.donation || null);
 
   // Reference confirmation state
-  const [utr, setUtr] = useState('');
+  const [utr, setUtr] = useState(savedDonation?.utr || '');
   const [utrSubmitting, setUtrSubmitting] = useState(false);
-  const [utrSubmitted, setUtrSubmitted] = useState(false);
+  const [utrSubmitted, setUtrSubmitted] = useState(savedDonation?.utrSubmitted || false);
+
+  // Persist to localStorage helper
+  const persistOfflineDonation = (donation, utrVal, submitted) => {
+    try {
+      localStorage.setItem('offlineDonation', JSON.stringify({
+        donation,
+        utr: utrVal || '',
+        utrSubmitted: submitted || false,
+        savedAt: Date.now()
+      }));
+    } catch {}
+  };
+
+  // Clear persisted data and start fresh
+  const startFreshDonation = () => {
+    localStorage.removeItem('offlineDonation');
+    setRegisteredDonation(null);
+    setUtr('');
+    setUtrSubmitted(false);
+    setFormError('');
+  };
 
   // Copy helpers
   const [copiedAcc, setCopiedAcc] = useState(false);
@@ -95,6 +125,7 @@ const BankDetails = () => {
 
       const res = await donationApi.createOfflineDonation(payload);
       setRegisteredDonation(res);
+      persistOfflineDonation(res, '', false);
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to submit donation details. Please try again.');
     } finally {
@@ -113,6 +144,7 @@ const BankDetails = () => {
         transactionId: utr.trim()
       });
       setUtrSubmitted(true);
+      persistOfflineDonation(registeredDonation, utr.trim(), true);
     } catch (err) {
       setFormError('Failed to save transaction ID. Please reach support.');
     } finally {
@@ -433,7 +465,7 @@ const BankDetails = () => {
 
               {/* Back to registration switch helper */}
               <button 
-                onClick={() => setRegisteredDonation(null)}
+                onClick={startFreshDonation}
                 className="text-xs font-bold text-primary-600 hover:text-primary-700 transition"
               >
                 &larr; Fill details for another donation
@@ -478,14 +510,108 @@ const BankDetails = () => {
                     </button>
                   </form>
                 ) : (
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-emerald-800 text-xs font-semibold space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
-                      <span>Confirmation Sent!</span>
+                  <div className="space-y-5">
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-emerald-800 text-xs font-semibold space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
+                        <span>Confirmation Sent!</span>
+                      </div>
+                      <p className="text-slate-500 font-normal leading-relaxed mt-1">
+                        Your reference UTR <strong className="font-mono text-slate-900">{utr}</strong> has been logged. Our finance team will verify the transfer against bank statements and approve the record shortly.
+                      </p>
                     </div>
-                    <p className="text-slate-500 font-normal leading-relaxed mt-1">
-                      Your reference UTR <strong className="font-mono text-slate-900">{utr}</strong> has been logged. Our finance team will verify the transfer against bank statements and approve the record shortly.
-                    </p>
+
+                    {/* Document Download Cards */}
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Your Donation Documents</h4>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                        Documents will be fully generated once admin verifies your payment. You can also access them later from the <Link to="/downloads" className="text-primary-600 font-semibold hover:underline">Download Center</Link> using your Donation ID & Mobile.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {/* View Receipt */}
+                      <Link
+                        to={`/donation/${registeredDonation.donationId}/receipt`}
+                        state={{ transaction: {
+                          donationId: registeredDonation.donationId,
+                          donorName: registeredDonation.donor?.fullName,
+                          amount: registeredDonation.totalAmount,
+                          cause: registeredDonation.cause,
+                          paymentMode: registeredDonation.paymentMode,
+                          transactionId: utr,
+                          date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                        }}}
+                        className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-9 h-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 text-xs group-hover:text-primary-600 transition-colors">View Receipt</h4>
+                            <span className="text-[10px] text-slate-400">View or print donation invoice</span>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-primary-500 transition-colors" />
+                      </Link>
+
+                      {/* 80G Certificate */}
+                      <Link
+                        to={`/donation/${registeredDonation.donationId}/certificate`}
+                        state={{ transaction: {
+                          donationId: registeredDonation.donationId,
+                          donorName: registeredDonation.donor?.fullName,
+                          email: registeredDonation.donor?.email,
+                          pan: registeredDonation.donor?.pan,
+                          amount: registeredDonation.totalAmount,
+                          cause: registeredDonation.cause,
+                          paymentMode: registeredDonation.paymentMode,
+                          transactionId: utr,
+                          date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                        }}}
+                        className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-9 h-9 rounded-lg bg-accent-50 text-accent-600 flex items-center justify-center">
+                            <Award className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 text-xs group-hover:text-accent-600 transition-colors">80G Certificate</h4>
+                            <span className="text-[10px] text-slate-400">Get instant tax exemption certificate</span>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-accent-500 transition-colors" />
+                      </Link>
+
+                      {/* 10BE Form */}
+                      <Link
+                        to={`/donation/${registeredDonation.donationId}/10be`}
+                        state={{ transaction: {
+                          donationId: registeredDonation.donationId,
+                          donorName: registeredDonation.donor?.fullName,
+                          email: registeredDonation.donor?.email,
+                          pan: registeredDonation.donor?.pan,
+                          amount: registeredDonation.totalAmount,
+                          cause: registeredDonation.cause,
+                          paymentMode: registeredDonation.paymentMode,
+                          transactionId: utr,
+                          date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                        }}}
+                        className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 transition-colors group"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 text-xs group-hover:text-emerald-600 transition-colors">10BE Form</h4>
+                            <span className="text-[10px] text-slate-400">Annual certificate of donation</span>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                      </Link>
+                    </div>
                   </div>
                 )}
 

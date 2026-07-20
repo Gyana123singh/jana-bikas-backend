@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Settings, ShieldCheck, CreditCard, FileText, LogOut, Menu, X, Heart, Image as ImageIcon, BookOpen, Share2, Users, MessageSquare, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Settings, ShieldCheck, CreditCard, FileText, LogOut, Menu, X, Heart, Image as ImageIcon, BookOpen, Share2, Users, MessageSquare, ChevronLeft, ChevronRight, ChevronDown, Info } from 'lucide-react';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 import AdminContent from './AdminContent';
+import AdminAbout from './AdminAbout';
 import AdminCauses from './AdminCauses';
 import AdminGallery from './AdminGallery';
 import AdminStories from './AdminStories';
@@ -47,6 +48,7 @@ const AdminApp = () => {
 
   const sidebarLinks = useMemo(() => [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { label: 'About Us Page', path: '/admin/about', icon: Info },
     { label: 'Content', path: '/admin/content', icon: FileText },
     { label: 'Causes', path: '/admin/causes', icon: Heart },
     { label: 'Gallery', path: '/admin/gallery', icon: ImageIcon },
@@ -195,6 +197,7 @@ const AdminApp = () => {
         <main className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_40%)] p-4 sm:p-8 overflow-y-auto h-full min-w-0">
           <Routes>
             <Route path="" element={<AdminDashboard />} />
+            <Route path="about" element={<AdminAbout />} />
             <Route path="content" element={<AdminContent />} />
             <Route path="causes" element={<AdminCauses />} />
             <Route path="gallery" element={<AdminGallery />} />
